@@ -118,7 +118,7 @@ def defaults_for(model_id: str) -> Cfg:
     if "latte" in mid:
         # Latte 常用 480p/720p，帧数依模型/显存而定
         return Cfg(480, 848, 97, 30, 6.0, 24)
-    if "animatelcm" in mid:
+    if "animate" in mid:
         # AnimateLCM 走 SD 基座 + MotionAdapter，24~30fps 常见
         return Cfg(512, 512, 64, 6, None, 24)
     return Cfg(None, None, 32, 30, 6.0, 12)
@@ -358,7 +358,7 @@ def run_animatediff(adapter_repo, base_repo, device, prompt, cfg, gen=None):
                num_inference_steps=25,
                generator=gen)
     # AnimateDiff 常见输出为帧序列；导出 MP4
-    return out.frames[0], (cfg.fps or 16)
+    return out.frames[0], (16)
 
 
 # ------------------------- Main -------------------------
