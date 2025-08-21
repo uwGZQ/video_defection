@@ -53,7 +53,7 @@ def parse_args():
     p.add_argument("--seed", type=int, default=None)
 
     # AnimateLCM needs a base SD checkpoint
-    p.add_argument("--animatelcm-base", type=str, default=None,
+    p.add_argument("--animatelcm-base", type=str, default="emilianJR/epiCRealism",
                    help="Base checkpoint repo for AnimateLCM (e.g., emilianJR/epiCRealism)")
 
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
