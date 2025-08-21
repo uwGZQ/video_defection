@@ -333,7 +333,7 @@ def run_latte(model_id, device, prompt, cfg, gen=None):
     return out.frames[0], (cfg.fps or 16)
 
 
-def run_animatelcm(adapter_repo, base_repo, device, prompt, cfg, gen=None):
+def run_animatediff(adapter_repo, base_repo, device, prompt, cfg, gen=None):
     """
     AnimateLCM = MotionAdapter + AnimateDiffPipeline + LCMScheduler
     adapter_repo: e.g., "wangfuyun/AnimateLCM"
@@ -437,11 +437,8 @@ if __name__ == "__main__":
                     frames, fps = run_hunyuanvideo(model_id, args.device, prompt, cfg, gen)
                 elif "latte" in mid:
                     frames, fps = run_latte(model_id, args.device, prompt, cfg, gen)
-                elif "animatelcm" in mid:
-                    base_ckpt = args.animatelcm_base
-                    if not base_ckpt:
-                        raise RuntimeError("AnimateLCM requires --animatelcm-base=<base SD repo>, e.g., emilianJR/epiCRealism")
-                    frames, fps = run_animatelcm(model_id, base_ckpt, args.device, prompt, cfg, gen)
+                elif "animate" in mid:
+                    frames, fps = run_animatediff(model_id, base_ckpt, args.device, prompt, cfg, gen)
                 else:
                     from diffusers import DiffusionPipeline
                     pipe = DiffusionPipeline.from_pretrained(model_id)
