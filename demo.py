@@ -306,18 +306,20 @@ def run_modelscope_or_zeroscope(model_id, device, prompt, cfg, gen=None):
 
 def run_hunyuanvideo(model_id, device, prompt, cfg, gen=None):
     # diffusers.HunyuanVideoPipeline official usage
-    from diffusers import HunyuanVideoPipeline
-    pipe = HunyuanVideoPipeline.from_pretrained(model_id, torch_dtype=_bf16())
+    from diffusers import HunyuanVideoPipeline, HunyuanVideoTransformer3DModel
+    transformer = HunyuanVideoTransformer3DModel.from_pretrained(
+        model_id, subfolder="transformer", torch_dtype=torch.bfloat16
+    )
+    pipe = HunyuanVideoPipeline.from_pretrained(model_id, transformer=transformer, torch_dtype=_bf16())
     pipe.enable_model_cpu_offload()
     try:
         pipe.vae.enable_tiling()
     except Exception:
         pass
     out = pipe(prompt=prompt,
-               height=cfg.h or 720, width=cfg.w or 1280,
+               height=320, width=512,
                num_frames=cfg.f or 61,              # 4*k+1
                num_inference_steps=cfg.steps or 30,
-               guidance_scale=cfg.gs or 6.0,
                generator=gen)
     return out.frames[0], (cfg.fps or 15)
 
@@ -327,13 +329,8 @@ def run_latte(model_id, device, prompt, cfg, gen=None):
     from diffusers import LattePipeline
     pipe = LattePipeline.from_pretrained(model_id, torch_dtype=_bf16())
     pipe = pipe.to(device)
-    out = pipe(prompt=prompt,
-               height=cfg.h or 480, width=cfg.w or 848,
-               num_frames=cfg.f or 97,
-               num_inference_steps=cfg.steps or 30,
-               guidance_scale=cfg.gs or 6.0,
-               generator=gen)
-    return out.frames[0], (cfg.fps or 24)
+    out = pipe(prompt=prompt)
+    return out.frames[0], (cfg.fps or 16)
 
 
 def run_animatelcm(adapter_repo, base_repo, device, prompt, cfg, gen=None):
@@ -342,19 +339,26 @@ def run_animatelcm(adapter_repo, base_repo, device, prompt, cfg, gen=None):
     adapter_repo: e.g., "wangfuyun/AnimateLCM"
     base_repo:    e.g., "emilianJR/epiCRealism" (pass via --animatelcm-base)
     """
-    from diffusers import AnimateDiffPipeline, LCMScheduler, MotionAdapter
-    adapter = MotionAdapter.from_pretrained(adapter_repo, torch_dtype=_fp16())
-    pipe = AnimateDiffPipeline.from_pretrained(base_repo, motion_adapter=adapter, torch_dtype=_fp16())
-    pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config, beta_schedule="linear")
+    import torch
+    from diffusers import AnimateDiffPipeline, DDIMScheduler, MotionAdapter
+    adapter = MotionAdapter.from_pretrained("guoyww/animatediff-motion-adapter-v1-5-2", torch_dtype=torch.float16)
+    pipe = AnimateDiffPipeline.from_pretrained("SG161222/Realistic_Vision_V5.1_noVAE", motion_adapter=adapter, torch_dtype=torch.float16)
+    pipe.scheduler = DDIMScheduler.from_pretrained(
+                        "SG161222/Realistic_Vision_V5.1_noVAE",
+                        subfolder="scheduler",
+                        clip_sample=False,
+                        timestep_spacing="linspace",
+                        beta_schedule="linear",
+                        steps_offset=1,
+                    )
     pipe = pipe.to(device)
     out = pipe(prompt=prompt,
-               height=cfg.h or 512, width=cfg.w or 512,
-               num_frames=cfg.f or 64,
-               guidance_scale=cfg.gs if cfg.gs is not None else 1.0,  # LCM通常低/无CFG
-               num_inference_steps=cfg.steps or 6,
+               num_frames=16,
+               guidance_scale=7.5,  # LCM通常低/无CFG
+               num_inference_steps=25,
                generator=gen)
     # AnimateDiff 常见输出为帧序列；导出 MP4
-    return out.frames[0], (cfg.fps or 24)
+    return out.frames[0], (cfg.fps or 16)
 
 
 # ------------------------- Main -------------------------
