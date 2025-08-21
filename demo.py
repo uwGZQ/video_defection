@@ -261,7 +261,6 @@ if __name__ == "__main__":
                 seed = (args.seed + global_idx) & 0xFFFFFFFF
 
             try:
-                # 生成
                 kwargs = dict(prompt=prompt)
                 if cfg.num_frames is not None:
                     kwargs["num_frames"] = cfg.num_frames
