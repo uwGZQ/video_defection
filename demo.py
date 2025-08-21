@@ -74,8 +74,7 @@ def parse_args():
 
 def read_prompts(path: str) -> List[str]:
     with open(path, "r", encoding="utf-8") as f:
-        lines = [ln.rstrip("
-") for ln in f]
+        lines = [ln.rstrip("\n") for ln in f]
     return [x for x in lines if x.strip()]
 
 
@@ -248,8 +247,7 @@ if __name__ == "__main__":
         base = defaults_for(model_id)
         cfg = merge_cfg(base, cli)
 
-        print(f"
-==== Model: {model_id} ====")
+        print(f"\n==== Model: {model_id} ====")
         try:
             pipe = build_pipeline(model_id, args.device)
         except Exception as e:
